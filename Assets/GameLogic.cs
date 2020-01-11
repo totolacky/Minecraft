@@ -18,6 +18,7 @@ public class GameLogic : MonoBehaviour
     private Camera playerCamera;
 
     private bool buildModeOn = true;
+    private bool destroyModeOn = false;
     private bool canBuild = false;
 
     private BlockSystem bSys;
@@ -37,6 +38,12 @@ public class GameLogic : MonoBehaviour
     [SerializeField]
     private Material templateMaterial;
 
+    [SerializeField]
+    private Material temp_del_Material;
+
+    [HideInInspector]
+    public Dictionary<Vector3, GameObject> created_block = new Dictionary<Vector3, GameObject>();
+
     private int blockSelectCounter = 0;
 
     void Start()
@@ -49,56 +56,70 @@ public class GameLogic : MonoBehaviour
     {
         UpdatePlacementPose();
         UpdatePlacementIndicator();
-
-        if (Input.GetKeyDown("e"))
+        if (buildModeOn || destroyModeOn)
         {
-            Debug.Log("Key Down : e, check1");
-            buildModeOn = !buildModeOn;
-
-            Debug.Log("Key Down : e, check2");
-            if (buildModeOn)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.None;
-            }
-
-            Debug.Log("Key Down : e, check3");
-        }
-
-        if (Input.GetKeyDown("r"))
-        {
-            Debug.Log("Key Down : r, check1");
-            blockSelectCounter++;
-            if (blockSelectCounter >= bSys.allBlocks.Count) blockSelectCounter = 0;
-        }
-
-        if (buildModeOn)
-        {
-            Debug.Log("Build Mode On, check1");
             RaycastHit buildPosHit;
 
             if (Physics.Raycast(playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0)), out buildPosHit, 10, buildableSurfacesLayer))
             {
-                Debug.Log("Build Mode On, check2");
                 Vector3 point = buildPosHit.point;
-                Debug.Log("x: " + point.x + " y: " + point.y + " z: " + point.z);
-                buildPos = new Vector3(Mathf.Round(point.x), Mathf.Round(point.y + (float)0.01), Mathf.Round(point.z));
+                //Debug.Log("Camera position : "+playerCamera.transform.position);
+                //Debug.Log("Raycast position : "+point);
+                float pos_x = Mathf.Round(point.x);
+                float pos_y = Mathf.Round(point.y + (float)0.05);
+                float pos_z = Mathf.Round(point.z);
+                if (Mathf.Round(point.x + (float)0.05) != Mathf.Round(point.x - (float)0.05))
+                {
+                    if ((playerCamera.transform.position.x - point.x) > 0)
+                    {
+                        if (buildModeOn) pos_x = Mathf.Round(point.x + (float)0.05);
+                        else pos_x = Mathf.Round(point.x - (float)0.05);
+                    }
+                    else
+                    {
+                        if (buildModeOn) pos_x = Mathf.Round(point.x - (float)0.05);
+                        else pos_x = Mathf.Round(point.x + (float)0.05);
+                    }
+                }
+                if (Mathf.Round(point.y + (float)0.05) != Mathf.Round(point.y - (float)0.05))
+                {
+                    if ((playerCamera.transform.position.y - point.y) > 0)
+                    {
+                        if (buildModeOn) pos_y = Mathf.Round(point.y + (float)0.05);
+                        else pos_y = Mathf.Round(point.y - (float)0.05);
+                    }
+                    else
+                    {
+                        if (buildModeOn) pos_y = Mathf.Round(point.y - (float)0.05);
+                        else pos_y = Mathf.Round(point.y + (float)0.05);
+                    }
+                }
+                if (Mathf.Round(point.z + (float)0.05) != Mathf.Round(point.z - (float)0.05))
+                {
+                    if ((playerCamera.transform.position.z - point.z) > 0)
+                    {
+                        if (buildModeOn) pos_z = Mathf.Round(point.z + (float)0.05);
+                        else pos_z = Mathf.Round(point.z - (float)0.05);
+                    }
+                    else
+                    {
+                        if (buildModeOn) pos_z = Mathf.Round(point.z - (float)0.05);
+                        else pos_z = Mathf.Round(point.z + (float)0.05);
+                    }
+                }
+                buildPos = new Vector3(pos_x, pos_y, pos_z);
+                //Debug.Log("Block position : "+buildPos);
                 canBuild = true;
             }
             else
             {
-                Debug.Log("Build Mode On, Destroy 1");
-                if (currentTemplateBlock != null) Destroy(currentTemplateBlock.gameObject);
+                if(currentTemplateBlock != null) Destroy(currentTemplateBlock.gameObject);
                 canBuild = false;
             }
         }
 
-        if (!buildModeOn && currentTemplateBlock != null)
+        if (!(buildModeOn || destroyModeOn) && currentTemplateBlock != null)
         {
-            Debug.Log("Build Mode Off, Destroy template Block");
             Destroy(currentTemplateBlock.gameObject);
             canBuild = false;
         }
@@ -106,17 +127,12 @@ public class GameLogic : MonoBehaviour
         if (canBuild && currentTemplateBlock == null)
         {
             currentTemplateBlock = Instantiate(blockTemplatePrefab, buildPos, Quaternion.identity);
-            currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
+            if (buildModeOn) currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
+            else currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
         }
-
         if (canBuild && currentTemplateBlock != null)
         {
             currentTemplateBlock.transform.position = buildPos;
-
-            if (Input.GetMouseButtonDown(0))
-            {
-                PlaceBlock();
-            }
         }
 
         if (placementPoseIsValid && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
@@ -169,13 +185,43 @@ public class GameLogic : MonoBehaviour
 
     private void PlaceBlock()
     {
-        if (isGroundMade)
+        GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
+        Block tempBlock = bSys.allBlocks[blockSelectCounter];
+        newBlock.name = tempBlock.blockName + "-Block";
+        newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+        created_block.Add(buildPos, newBlock);
+    }
+    private void DeleteBlock()
+    {
+        GameObject newBlock = created_block[buildPos];
+        Destroy(newBlock);
+        created_block.Remove(buildPos);
+    }
+    public void create_mode()
+    {
+        buildModeOn = !buildModeOn;
+        currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
+        if (buildModeOn) destroyModeOn = false;
+    }
+
+    public void delete_mode() // Destroy Mode
+    {
+        destroyModeOn = !destroyModeOn;
+        currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
+        if (destroyModeOn) buildModeOn = false;
+    }
+    public void change_block() // Change block material
+    {
+        blockSelectCounter++;
+        if (blockSelectCounter >= bSys.allBlocks.Count) blockSelectCounter = 0;
+    }
+    public void screen_touch()
+    {
+        if (canBuild && currentTemplateBlock != null)
         {
-            Debug.Log("Plcae Block");
-            GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
-            Block tempBlock = bSys.allBlocks[blockSelectCounter];
-            newBlock.name = tempBlock.blockName + "-Block";
-            newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+            currentTemplateBlock.transform.position = buildPos;
+            if (buildModeOn) PlaceBlock();
+            else DeleteBlock();
         }
     }
 }
