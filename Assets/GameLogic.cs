@@ -17,7 +17,7 @@ public class GameLogic : MonoBehaviour
     [SerializeField]
     private Camera playerCamera;
 
-    private bool buildModeOn = true;
+    private bool buildModeOn = false;
     private bool destroyModeOn = false;
     private bool canBuild = false;
 
@@ -45,6 +45,9 @@ public class GameLogic : MonoBehaviour
     public Dictionary<Vector3, GameObject> created_block = new Dictionary<Vector3, GameObject>();
 
     private int blockSelectCounter = 0;
+
+    //changed!
+    private Boolean scaled_large = false;
 
     void Start()
     {
@@ -144,7 +147,10 @@ public class GameLogic : MonoBehaviour
     private void PlaceObject()
     {
         if (!isGroundMade) {
-            Instantiate(objectToPlace, placementPose.position, placementPose.rotation);
+            var position = new Vector3(Mathf.Round(placementPose.position.x), Mathf.Round(placementPose.position.y) - (float)1, Mathf.Round(placementPose.position.z));
+            Debug.Log("placementPose position: ("+ placementPose.position.x +"," + placementPose.position.y + "," + placementPose.position.z + ")");
+            Debug.Log("position: (" + position.x + "," + position.y + "," + position.z + ")");
+            Instantiate(objectToPlace, position, placementPose.rotation);
             isGroundMade = true;
         }
     }
@@ -178,7 +184,7 @@ public class GameLogic : MonoBehaviour
             placementPose = hits[0].pose;
 
             var cameraForward = Camera.current.transform.forward;
-            var cameraBearing = new Vector3(Mathf.Round(cameraForward.x), 0, Mathf.Round(cameraForward.z)).normalized;
+            var cameraBearing = new Vector3(cameraForward.x, 0, cameraForward.z).normalized;
             placementPose.rotation = Quaternion.LookRotation(cameraBearing);
         }
     }
@@ -222,6 +228,23 @@ public class GameLogic : MonoBehaviour
             currentTemplateBlock.transform.position = buildPos;
             if (buildModeOn) PlaceBlock();
             else DeleteBlock();
+        }
+    }
+
+    //changed!
+    public void change_scale()
+    {
+        if(scaled_large)
+        {
+            // 작은 사이즈로 축소하기
+            arOrigin.transform.localScale = Vector3.one * 10;
+            scaled_large = !scaled_large;
+        }
+        else
+        {
+            // 큰 사이즈로 확대하기
+            arOrigin.transform.localScale = Vector3.one * 1;
+            scaled_large = !scaled_large;
         }
     }
 }
