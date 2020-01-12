@@ -20,6 +20,7 @@ public class GameLogic : MonoBehaviour
     private bool buildModeOn = false;
     private bool destroyModeOn = false;
     private bool canBuild = false;
+    private bool large = false;
 
     private BlockSystem bSys;
 
@@ -36,6 +37,11 @@ public class GameLogic : MonoBehaviour
     private GameObject blockPrefab;
 
     [SerializeField]
+    private GameObject blockTemplatePrefab_big;
+    [SerializeField]
+    private GameObject blockPrefab_big;
+
+    [SerializeField]
     private Material templateMaterial;
 
     [SerializeField]
@@ -46,8 +52,8 @@ public class GameLogic : MonoBehaviour
 
     private int blockSelectCounter = 0;
 
-    //changed!
-    private Boolean scaled_large = false;
+    private Vector3 ground_pos;
+
 
     void Start()
     {
@@ -146,11 +152,11 @@ public class GameLogic : MonoBehaviour
 
     private void PlaceObject()
     {
-        if (!isGroundMade) {
+        if (!isGroundMade)
+        {
             var position = new Vector3(Mathf.Round(placementPose.position.x), Mathf.Round(placementPose.position.y) - (float)1, Mathf.Round(placementPose.position.z));
-            Debug.Log("placementPose position: ("+ placementPose.position.x +"," + placementPose.position.y + "," + placementPose.position.z + ")");
-            Debug.Log("position: (" + position.x + "," + position.y + "," + position.z + ")");
             Instantiate(objectToPlace, position, placementPose.rotation);
+            ground_pos = position;
             isGroundMade = true;
         }
     }
@@ -188,6 +194,7 @@ public class GameLogic : MonoBehaviour
             placementPose.rotation = Quaternion.LookRotation(cameraBearing);
         }
     }
+
 
     private void PlaceBlock()
     {
@@ -231,20 +238,75 @@ public class GameLogic : MonoBehaviour
         }
     }
 
-    //changed!
-    public void change_scale()
+    public void save_block()
     {
-        if(scaled_large)
+        PlayerPrefs.DeleteAll();
+        List<Vector3> block_list = new List<Vector3>(created_block.Keys);
+        PlayerPrefs.SetInt("total_block", created_block.Count);
+        for (int i = 0; i < created_block.Count; i++)
         {
-            // 작은 사이즈로 축소하기
-            arOrigin.transform.localScale = Vector3.one * 10;
-            scaled_large = !scaled_large;
+            PlayerPrefs.SetFloat("block_x_"+Convert.ToString(i), block_list[i].x - ground_pos.x);
+            PlayerPrefs.SetFloat("block_y_" + Convert.ToString(i), block_list[i].y - ground_pos.y);
+            PlayerPrefs.SetFloat("block_z_" + Convert.ToString(i), block_list[i].z - ground_pos.z);
         }
-        else
+        PlayerPrefs.Save();
+
+    }
+    public void load_block()
+    {
+        if (created_block.Count == 0)
         {
-            // 큰 사이즈로 확대하기
-            arOrigin.transform.localScale = Vector3.one * 1;
-            scaled_large = !scaled_large;
+
+            for (int i = 0; i < PlayerPrefs.GetInt("total_block", 0); i++)
+            {
+                buildPos = new Vector3(PlayerPrefs.GetFloat("block_x_" + Convert.ToString(i),0) + ground_pos.x,
+                    PlayerPrefs.GetFloat("block_y_" + Convert.ToString(i), 0) + ground_pos.y,
+                    PlayerPrefs.GetFloat("block_z_" + Convert.ToString(i), 0) + ground_pos.z);
+                GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
+                Block tempBlock = bSys.allBlocks[blockSelectCounter];
+                newBlock.name = tempBlock.blockName + "-Block";
+                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                created_block.Add(buildPos, newBlock);
+            }
+        }
+    }
+    public void scale_block()
+    {
+        List<Vector3> block_list = new List<Vector3>(created_block.Keys);
+        for (int i = 0; i < created_block.Count; i++)
+        {
+            Vector3 new_pos = block_list[i];
+            GameObject oldBlock = created_block[block_list[i]];
+
+            if(new_pos.x > ground_pos.x) new_pos. x= 5 * (new_pos.x - ground_pos.x) + (float)0.5 + ground_pos.x;
+            else new_pos.x = 5 * (new_pos.x - ground_pos.x) - (float)0.5 + ground_pos.x;
+
+            if (new_pos.y > ground_pos.y) new_pos.y = 5 * (new_pos.y - ground_pos.y) + (float)0.5 + ground_pos.y;
+            else new_pos.y = 5 * (new_pos.y - ground_pos.y) - (float)0.5 + ground_pos.y;
+
+            if (new_pos.z > ground_pos.z) new_pos.z = 5 * (new_pos.z - ground_pos.z) + (float)0.5 + ground_pos.z;
+            else new_pos.z = 5 * (new_pos.z - ground_pos.z) - (float)0.5 + ground_pos.z;
+
+                
+            GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
+            Block tempBlock = bSys.allBlocks[blockSelectCounter];
+            newBlock.name = tempBlock.blockName + "-Block";
+            newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+            //newBlock.name = oldBlock.name + "-Block";
+            //newBlock.GetComponent<MeshRenderer>().material = oldBlock.GetComponent<MeshRenderer>().material;
+
+            Destroy(oldBlock);
+        }
+    }
+
+    public void clear_block()
+    {
+        List<Vector3> block_list = new List<Vector3>(created_block.Keys);
+        for (int i = 0; i < created_block.Count; i++)
+        {
+            GameObject newBlock = created_block[block_list[i]];
+            Destroy(newBlock);
+            created_block.Remove(block_list[i]);
         }
     }
 }
