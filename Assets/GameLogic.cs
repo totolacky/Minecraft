@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameLogic : MonoBehaviour
 {
@@ -75,6 +76,10 @@ public class GameLogic : MonoBehaviour
     public GameObject bomb_obj;
 
     [SerializeField]
+    public GameObject canvas;
+    private Boolean UIVisible = true;
+
+    [SerializeField]
     private static string worldName;
     
     private GameObject ground;
@@ -116,6 +121,12 @@ public class GameLogic : MonoBehaviour
 
     void Update()
     {
+        if(!UIVisible && Input.GetMouseButtonDown(0))
+        {
+            show_UI();
+            return;
+        }
+
         UpdatePlacementPose();
         UpdatePlacementIndicator();
 
@@ -506,6 +517,16 @@ public class GameLogic : MonoBehaviour
             }
             ground.transform.localScale = new Vector3(ground.transform.localScale.x * scale, 1, ground.transform.localScale.z * scale);
         }
+    }
+    public void hide_UI()
+    {
+        canvas.SetActive(false);
+        UIVisible = false;
+    }
+    public void show_UI()
+    {
+        canvas.SetActive(true);
+        UIVisible = true;
     }
     public void to_home()
     {
