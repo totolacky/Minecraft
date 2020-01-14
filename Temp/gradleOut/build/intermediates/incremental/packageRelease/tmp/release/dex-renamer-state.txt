@@ -1,4 +1,0 @@
-#Tue Jan 14 01:19:23 KST 2020
-base.0=F\:\\Minecraft_new\\Temp\\gradleOut\\build\\intermediates\\transforms\\dexMerger\\release\\0
-path.0=classes.dex
-renamed.0=classes.dex
