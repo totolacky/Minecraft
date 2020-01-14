@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using System;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using UnityEngine.SceneManagement;
 
 public class GameLogic : MonoBehaviour
 {
@@ -35,9 +38,6 @@ public class GameLogic : MonoBehaviour
     private GameObject blockTemplatePrefab;
     [SerializeField]
     private GameObject blockPrefab;
-
-    [SerializeField]
-    private GameObject blockTemplatePrefab_big;
     [SerializeField]
     private GameObject blockPrefab_big;
 
@@ -50,107 +50,150 @@ public class GameLogic : MonoBehaviour
     [HideInInspector]
     public Dictionary<Vector3, GameObject> created_block = new Dictionary<Vector3, GameObject>();
 
+    [HideInInspector]
+    public Dictionary<Vector3, GameObject> created_block_big = new Dictionary<Vector3, GameObject>();
+
+    [HideInInspector]
+    public Dictionary<Vector3, int> created_block_mat = new Dictionary<Vector3, int>();
+
     private int blockSelectCounter = 0;
 
     private Vector3 ground_pos;
 
+    [SerializeField]
+    private static string worldName;
+
+    [Serializable]
+    public class World
+    {
+        //public Dictionary<int, Block> blockType;
+        public string worldName;
+        public List<BlockInfo> blocks;
+
+        public World(string name)
+        {
+            //blockType = new Dictionary<int, Block>();
+            worldName = name;
+            blocks = new List<BlockInfo>();
+        }
+    }
+
+    [Serializable]
+    public class BlockInfo
+    {
+        public float x;
+        public float y;
+        public float z;
+        public int mat;
+
+        public BlockInfo(Vector3 _pos, int _mat)
+        {
+            x = _pos.x;
+            y = _pos.y;
+            z = _pos.z;
+            mat = _mat;
+        }
+    }
 
     void Start()
     {
         arOrigin = FindObjectOfType<ARSessionOrigin>();
         bSys = GetComponent<BlockSystem>();
+        playerCamera.farClipPlane = 200;
+        Debug.Log("World Name: "+worldName);
     }
 
     void Update()
     {
         UpdatePlacementPose();
         UpdatePlacementIndicator();
-        if (buildModeOn || destroyModeOn)
-        {
-            RaycastHit buildPosHit;
 
-            if (Physics.Raycast(playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0)), out buildPosHit, 10, buildableSurfacesLayer))
+        if (!large)
+        {
+            if (buildModeOn || destroyModeOn)
             {
-                Vector3 point = buildPosHit.point;
-                //Debug.Log("Camera position : "+playerCamera.transform.position);
-                //Debug.Log("Raycast position : "+point);
-                float pos_x = Mathf.Round(point.x);
-                float pos_y = Mathf.Round(point.y + (float)0.05);
-                float pos_z = Mathf.Round(point.z);
-                if (Mathf.Round(point.x + (float)0.05) != Mathf.Round(point.x - (float)0.05))
+                RaycastHit buildPosHit;
+
+                if (Physics.Raycast(playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0)), out buildPosHit, 10, buildableSurfacesLayer))
                 {
-                    if ((playerCamera.transform.position.x - point.x) > 0)
+                    Vector3 point = buildPosHit.point;
+                    float pos_x = Mathf.Round(point.x);
+                    float pos_y = Mathf.Round(point.y + (float)0.05);
+                    float pos_z = Mathf.Round(point.z);
+                    if (Mathf.Round(point.x + (float)0.05) != Mathf.Round(point.x - (float)0.05))
                     {
-                        if (buildModeOn) pos_x = Mathf.Round(point.x + (float)0.05);
-                        else pos_x = Mathf.Round(point.x - (float)0.05);
+                        if ((playerCamera.transform.position.x - point.x) > 0)
+                        {
+                            if (buildModeOn) pos_x = Mathf.Round(point.x + (float)0.05);
+                            else pos_x = Mathf.Round(point.x - (float)0.05);
+                        }
+                        else
+                        {
+                            if (buildModeOn) pos_x = Mathf.Round(point.x - (float)0.05);
+                            else pos_x = Mathf.Round(point.x + (float)0.05);
+                        }
                     }
-                    else
+                    if (Mathf.Round(point.y + (float)0.05) != Mathf.Round(point.y - (float)0.05))
                     {
-                        if (buildModeOn) pos_x = Mathf.Round(point.x - (float)0.05);
-                        else pos_x = Mathf.Round(point.x + (float)0.05);
+                        if ((playerCamera.transform.position.y - point.y) > 0)
+                        {
+                            if (buildModeOn) pos_y = Mathf.Round(point.y + (float)0.05);
+                            else pos_y = Mathf.Round(point.y - (float)0.05);
+                        }
+                        else
+                        {
+                            if (buildModeOn) pos_y = Mathf.Round(point.y - (float)0.05);
+                            else pos_y = Mathf.Round(point.y + (float)0.05);
+                        }
                     }
+                    if (Mathf.Round(point.z + (float)0.05) != Mathf.Round(point.z - (float)0.05))
+                    {
+                        if ((playerCamera.transform.position.z - point.z) > 0)
+                        {
+                            if (buildModeOn) pos_z = Mathf.Round(point.z + (float)0.05);
+                            else pos_z = Mathf.Round(point.z - (float)0.05);
+                        }
+                        else
+                        {
+                            if (buildModeOn) pos_z = Mathf.Round(point.z - (float)0.05);
+                            else pos_z = Mathf.Round(point.z + (float)0.05);
+                        }
+                    }
+                    buildPos = new Vector3(pos_x, pos_y, pos_z);
+                    canBuild = true;
                 }
-                if (Mathf.Round(point.y + (float)0.05) != Mathf.Round(point.y - (float)0.05))
+                else
                 {
-                    if ((playerCamera.transform.position.y - point.y) > 0)
-                    {
-                        if (buildModeOn) pos_y = Mathf.Round(point.y + (float)0.05);
-                        else pos_y = Mathf.Round(point.y - (float)0.05);
-                    }
-                    else
-                    {
-                        if (buildModeOn) pos_y = Mathf.Round(point.y - (float)0.05);
-                        else pos_y = Mathf.Round(point.y + (float)0.05);
-                    }
+                    if (currentTemplateBlock != null) Destroy(currentTemplateBlock.gameObject);
+                    canBuild = false;
                 }
-                if (Mathf.Round(point.z + (float)0.05) != Mathf.Round(point.z - (float)0.05))
-                {
-                    if ((playerCamera.transform.position.z - point.z) > 0)
-                    {
-                        if (buildModeOn) pos_z = Mathf.Round(point.z + (float)0.05);
-                        else pos_z = Mathf.Round(point.z - (float)0.05);
-                    }
-                    else
-                    {
-                        if (buildModeOn) pos_z = Mathf.Round(point.z - (float)0.05);
-                        else pos_z = Mathf.Round(point.z + (float)0.05);
-                    }
-                }
-                buildPos = new Vector3(pos_x, pos_y, pos_z);
-                //Debug.Log("Block position : "+buildPos);
-                canBuild = true;
             }
-            else
+
+            if (!(buildModeOn || destroyModeOn) && currentTemplateBlock != null)
             {
-                if(currentTemplateBlock != null) Destroy(currentTemplateBlock.gameObject);
+                Destroy(currentTemplateBlock.gameObject);
                 canBuild = false;
             }
-        }
 
-        if (!(buildModeOn || destroyModeOn) && currentTemplateBlock != null)
-        {
-            Destroy(currentTemplateBlock.gameObject);
-            canBuild = false;
-        }
-
-        if (canBuild && currentTemplateBlock == null)
-        {
-            currentTemplateBlock = Instantiate(blockTemplatePrefab, buildPos, Quaternion.identity);
-            if (buildModeOn) currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
-            else currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
-        }
-        if (canBuild && currentTemplateBlock != null)
-        {
-            currentTemplateBlock.transform.position = buildPos;
+            if (canBuild && currentTemplateBlock == null)
+            {
+                currentTemplateBlock = Instantiate(blockTemplatePrefab, buildPos, Quaternion.identity);
+                if (buildModeOn) currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
+                else currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
+            }
+            if (canBuild && currentTemplateBlock != null)
+            {
+                currentTemplateBlock.transform.position = buildPos;
+            }
         }
 
         if (placementPoseIsValid && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
-            PlaceObject();
+            PlaceGround();
         }
     }
 
-    private void PlaceObject()
+    private void PlaceGround()
     {
         if (!isGroundMade)
         {
@@ -158,6 +201,8 @@ public class GameLogic : MonoBehaviour
             Instantiate(objectToPlace, position, placementPose.rotation);
             ground_pos = position;
             isGroundMade = true;
+
+            load_block();
         }
     }
 
@@ -180,6 +225,10 @@ public class GameLogic : MonoBehaviour
 
     private void UpdatePlacementPose()
     {
+        if(Camera.current == null)
+        {
+            return;
+        }
         var screenCenter = Camera.current.ViewportToScreenPoint(new Vector3(0.5f, 0.5f));
         var hits = new List<ARRaycastHit>();
         arOrigin.Raycast(screenCenter, hits, UnityEngine.Experimental.XR.TrackableType.Planes);
@@ -195,7 +244,6 @@ public class GameLogic : MonoBehaviour
         }
     }
 
-
     private void PlaceBlock()
     {
         GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
@@ -203,110 +251,248 @@ public class GameLogic : MonoBehaviour
         newBlock.name = tempBlock.blockName + "-Block";
         newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
         created_block.Add(buildPos, newBlock);
+        created_block_mat.Add(buildPos, blockSelectCounter);
+
+        Debug.Log("PlaceBlock > Total block : " + created_block.Count + ", created_block" + buildPos);
+    }
+    public void screen_touch()
+    {
+        if (!large)
+        {
+            if (canBuild && currentTemplateBlock != null)
+            {
+                currentTemplateBlock.transform.position = buildPos;
+                if (buildModeOn) PlaceBlock();
+                else DeleteBlock();
+            }
+        }
     }
     private void DeleteBlock()
     {
         GameObject newBlock = created_block[buildPos];
         Destroy(newBlock);
         created_block.Remove(buildPos);
+        created_block_mat.Remove(buildPos);
     }
     public void create_mode()
     {
-        buildModeOn = !buildModeOn;
+        buildModeOn = true;
+        destroyModeOn = false;
         currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
-        if (buildModeOn) destroyModeOn = false;
     }
 
     public void delete_mode() // Destroy Mode
     {
-        destroyModeOn = !destroyModeOn;
+        buildModeOn = false;
+        destroyModeOn = true;
         currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
-        if (destroyModeOn) buildModeOn = false;
     }
     public void change_block() // Change block material
     {
         blockSelectCounter++;
         if (blockSelectCounter >= bSys.allBlocks.Count) blockSelectCounter = 0;
     }
-    public void screen_touch()
-    {
-        if (canBuild && currentTemplateBlock != null)
-        {
-            currentTemplateBlock.transform.position = buildPos;
-            if (buildModeOn) PlaceBlock();
-            else DeleteBlock();
-        }
-    }
 
     public void save_block()
     {
-        PlayerPrefs.DeleteAll();
+        Debug.Log("Saved");
+        if (large) scale_block();
+        PlayerPrefs.DeleteKey("W:"+worldName);
         List<Vector3> block_list = new List<Vector3>(created_block.Keys);
-        PlayerPrefs.SetInt("total_block", created_block.Count);
+        var world = new World(worldName);
         for (int i = 0; i < created_block.Count; i++)
         {
-            PlayerPrefs.SetFloat("block_x_"+Convert.ToString(i), block_list[i].x - ground_pos.x);
-            PlayerPrefs.SetFloat("block_y_" + Convert.ToString(i), block_list[i].y - ground_pos.y);
-            PlayerPrefs.SetFloat("block_z_" + Convert.ToString(i), block_list[i].z - ground_pos.z);
+            world.blocks.Add(new BlockInfo(new Vector3(block_list[i].x - ground_pos.x, block_list[i].y - ground_pos.y, block_list[i].z - ground_pos.z), created_block_mat[block_list[i]]));
         }
+        PlayerPrefs.SetString("W:" + worldName, MyUtil.ObjectToString(world));
+
+        var worlds = (ArrayList)MyUtil.StringToObject(PlayerPrefs.GetString("worlds"));
+        if (!worlds.Contains(worldName))
+        {
+            worlds.Add(worldName);
+            PlayerPrefs.DeleteKey("worlds");
+            PlayerPrefs.SetString("worlds",MyUtil.ObjectToString(worlds));
+        }
+
         PlayerPrefs.Save();
 
+        MyUtil.PrintArrayList((ArrayList)MyUtil.StringToObject(PlayerPrefs.GetString("worlds")));
     }
     public void load_block()
     {
+        large = false;
         if (created_block.Count == 0)
         {
-
-            for (int i = 0; i < PlayerPrefs.GetInt("total_block", 0); i++)
+            var world = (World)MyUtil.StringToObject(PlayerPrefs.GetString("W:" + worldName));
+            for (int i = 0; i < world.blocks.Count; i++)
             {
-                buildPos = new Vector3(PlayerPrefs.GetFloat("block_x_" + Convert.ToString(i),0) + ground_pos.x,
-                    PlayerPrefs.GetFloat("block_y_" + Convert.ToString(i), 0) + ground_pos.y,
-                    PlayerPrefs.GetFloat("block_z_" + Convert.ToString(i), 0) + ground_pos.z);
+                buildPos = new Vector3(
+                    world.blocks[i].x + ground_pos.x,
+                    world.blocks[i].y + ground_pos.y,
+                    world.blocks[i].z + ground_pos.z);
                 GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
-                Block tempBlock = bSys.allBlocks[blockSelectCounter];
+                Block tempBlock = bSys.allBlocks[world.blocks[i].mat];
                 newBlock.name = tempBlock.blockName + "-Block";
                 newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
                 created_block.Add(buildPos, newBlock);
+                created_block_mat.Add(buildPos, world.blocks[i].mat);
             }
-        }
-    }
-    public void scale_block()
-    {
-        List<Vector3> block_list = new List<Vector3>(created_block.Keys);
-        for (int i = 0; i < created_block.Count; i++)
-        {
-            Vector3 new_pos = block_list[i];
-            GameObject oldBlock = created_block[block_list[i]];
-
-            if(new_pos.x > ground_pos.x) new_pos. x= 5 * (new_pos.x - ground_pos.x) + (float)0.5 + ground_pos.x;
-            else new_pos.x = 5 * (new_pos.x - ground_pos.x) - (float)0.5 + ground_pos.x;
-
-            if (new_pos.y > ground_pos.y) new_pos.y = 5 * (new_pos.y - ground_pos.y) + (float)0.5 + ground_pos.y;
-            else new_pos.y = 5 * (new_pos.y - ground_pos.y) - (float)0.5 + ground_pos.y;
-
-            if (new_pos.z > ground_pos.z) new_pos.z = 5 * (new_pos.z - ground_pos.z) + (float)0.5 + ground_pos.z;
-            else new_pos.z = 5 * (new_pos.z - ground_pos.z) - (float)0.5 + ground_pos.z;
-
-                
-            GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
-            Block tempBlock = bSys.allBlocks[blockSelectCounter];
-            newBlock.name = tempBlock.blockName + "-Block";
-            newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
-            //newBlock.name = oldBlock.name + "-Block";
-            //newBlock.GetComponent<MeshRenderer>().material = oldBlock.GetComponent<MeshRenderer>().material;
-
-            Destroy(oldBlock);
         }
     }
 
     public void clear_block()
     {
+        Debug.Log("clear_Block > Total block : " + created_block.Count);
         List<Vector3> block_list = new List<Vector3>(created_block.Keys);
-        for (int i = 0; i < created_block.Count; i++)
+
+
+        for (int i = 0; i < block_list.Count; i++)
         {
+            Debug.Log("clear_Block > for Delete block : " + i);
             GameObject newBlock = created_block[block_list[i]];
             Destroy(newBlock);
             created_block.Remove(block_list[i]);
+            created_block_mat.Remove(block_list[i]);
+        };
+
+    }
+    public void scale_block()
+    {
+        float scale = 5;
+        if (large)
+        {
+            large = false;
+            List<Vector3> block_list = new List<Vector3>(created_block_big.Keys);
+            for (int i = 0; i < block_list.Count; i++)
+            {
+                //Get new position of block
+                Vector3 new_pos = block_list[i];
+                GameObject oldBlock = created_block_big[block_list[i]];
+
+                new_pos.x = (new_pos.x + ((scale - (float)1) * ground_pos.x)) / scale;
+
+                if (new_pos.y > ground_pos.y) new_pos.y = (new_pos.y + ((scale - (float)1) * ground_pos.y) + ((scale - (float)1) / (float)2)) / scale;
+                else new_pos.y = (new_pos.y + ((scale - (float)1) * ground_pos.y) - ((scale - (float)1) / (float)2)) / scale;
+
+                new_pos.z = (new_pos.z + ((scale - (float)1) * ground_pos.z)) / scale;
+
+
+                //Make small block
+                GameObject newBlock = Instantiate(blockPrefab, new_pos, Quaternion.identity);
+                Block tempBlock = bSys.allBlocks[created_block_mat[new_pos]];
+                newBlock.name = tempBlock.blockName + "-Block";
+                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                created_block.Add(new_pos, newBlock);
+
+                //Delete big block
+                Destroy(oldBlock);
+                created_block_big.Remove(block_list[i]);
+            }
         }
+        else
+        {
+            large = true;
+            List<Vector3> block_list = new List<Vector3>(created_block.Keys);
+            for (int i = 0; i < block_list.Count; i++)
+            {
+                //Get new position of block
+                Vector3 new_pos = block_list[i];
+                GameObject oldBlock = created_block[block_list[i]];
+
+                new_pos.x = scale * (new_pos.x - ground_pos.x) + ground_pos.x;
+
+                if (new_pos.y > ground_pos.y) new_pos.y = scale * (new_pos.y - ground_pos.y) + (float)0.5 + ground_pos.y - (scale / (float)2);
+                else new_pos.y = scale * (new_pos.y - ground_pos.y) - (float)0.5 + ground_pos.y + (scale / (float)2);
+
+                new_pos.z = scale * (new_pos.z - ground_pos.z) + ground_pos.z;
+
+
+                //Make big block
+                GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
+                Block tempBlock = bSys.allBlocks[created_block_mat[block_list[i]]];
+                newBlock.name = tempBlock.blockName + "-Block";
+                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                created_block_big.Add(new_pos, newBlock);
+
+                //Delete small block
+                Destroy(oldBlock);
+                created_block.Remove(block_list[i]);
+            }
+        }
+    }
+
+    public void to_home()
+    {
+        SceneManager.LoadScene("World choice scene");
+    }
+
+    /*public string ObjectToString(object obj)
+    {
+        using (MemoryStream ms = new MemoryStream())
+        {
+            new BinaryFormatter().Serialize(ms, obj);
+            return Convert.ToBase64String(ms.ToArray());
+        }
+    }*/
+
+    /*public object StringToObject(string base64String)
+    {
+        byte[] bytes = Convert.FromBase64String(base64String);
+        using (MemoryStream ms = new MemoryStream(bytes, 0, bytes.Length))
+        {
+            ms.Write(bytes, 0, bytes.Length);
+            ms.Position = 0;
+            return new BinaryFormatter().Deserialize(ms);
+        }
+    }*/
+
+    public void mat_01()
+    {
+        blockSelectCounter = 00;
+    }
+    public void mat_02()
+    {
+        blockSelectCounter = 01;
+    }
+    public void mat_03()
+    {
+        blockSelectCounter = 02;
+    }
+    public void mat_04()
+    {
+        blockSelectCounter = 03;
+    }
+    public void mat_05()
+    {
+        blockSelectCounter = 04;
+    }
+    public void mat_06()
+    {
+        blockSelectCounter = 05;
+    }
+    public void mat_07()
+    {
+        blockSelectCounter = 06;
+    }
+    public void mat_08()
+    {
+        blockSelectCounter = 07;
+    }
+    public void mat_09()
+    {
+        blockSelectCounter = 08;
+    }
+    public void mat_10()
+    {
+        blockSelectCounter = 09;
+    }
+    public void mat_11()
+    {
+        blockSelectCounter = 10;
+    }
+
+    public void setWorldName(string newName)
+    {
+        worldName = newName;
     }
 }

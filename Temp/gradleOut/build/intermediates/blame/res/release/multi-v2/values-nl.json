@@ -1,0 +1,26 @@
+{
+    "logs": [
+        {
+            "outputFile": "F:\\Minecraft_new\\Temp\\gradleOut\\build\\intermediates\\incremental\\mergeReleaseResources\\merged.dir\\values-nl\\values-nl.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\q\\.gradle\\caches\\transforms-2\\files-2.1\\66b474518f7c5d0b04ec8add75a62c2d\\res\\values-nl\\values.xml",
+                    "from": {
+                        "startLines": "4,5,6,7,8",
+                        "startColumns": "0,0,0,0,0",
+                        "startOffsets": "190,240,291,392,501",
+                        "endColumns": "49,50,100,108,63",
+                        "endOffsets": "239,290,391,500,564"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "55,109,164,269,382",
+                        "endColumns": "53,54,104,112,67",
+                        "endOffsets": "104,159,264,377,445"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{6D84558F-D623-0CB4-722B-FC6D96BDFC85}</ProjectGuid>
+    <ProjectGuid>{82FF3F77-01DE-471D-5AAA-F2F2E018685E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -63,64 +63,51 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\ARBuildingSystem.cs" />
     <Compile Include="Assets\ARTapToPlaceObject.cs" />
     <Compile Include="Assets\BlockSystem.cs" />
+    <Compile Include="Assets\CreateWorld.cs" />
     <Compile Include="Assets\GameLogic.cs" />
-    <Compile Include="Assets\Player\PlayerMove.cs" />
-    <None Include="Assets\Vuforia\Shaders\ColoredLines.shader" />
-    <None Include="Assets\Vuforia\Shaders\CameraDiffuse.shader" />
-    <None Include="Assets\Vuforia\Shaders\VertexLitWithZ.shader" />
-    <None Include="Assets\Vuforia\Shaders\VuforiaVB_YUVNV12_YUVNV21.cginc" />
-    <None Include="Assets\Vuforia\Shaders\VideoBackground.shader" />
-    <None Include="Assets\Vuforia\Shaders\OutlineOpaque.shader" />
-    <None Include="Assets\Vuforia\Shaders\VuforiaVB_YUV420P_YUVYV12.cginc" />
-    <None Include="Assets\Vuforia\Shaders\VuforiaVideoBackground.cginc" />
-    <None Include="Assets\Vuforia\Shaders\DepthMask.shader" />
-    <None Include="Assets\Vuforia\Databases\Emulator\VuforiaEmulator.xml" />
-    <None Include="Assets\Vuforia\Shaders\ClippingMask.shader" />
-    <None Include="Assets\Vuforia\Shaders\BrightTexture.shader" />
-    <None Include="Assets\Vuforia\Shaders\DepthContour.shader" />
-    <None Include="Assets\Vuforia\Shaders\VuforiaVB_RGB.cginc" />
-    <None Include="Assets\Vuforia\Shaders\Text3D.shader" />
+    <Compile Include="Assets\MyUtil.cs" />
+    <Compile Include="Assets\Notification.cs" />
+    <Compile Include="Assets\ScrollViewAdapter.cs" />
     <Reference Include="Unity.XR.FaceSubsystem">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.FaceSubsystem.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.FaceSubsystem.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Subsystem.Registration">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.Subsystem.Registration.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.Subsystem.Registration.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARCore">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARCore.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARCore.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARFoundation.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARFoundation.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARFoundation.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARFoundation">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARFoundation.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARFoundation.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARCore.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARCore.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARCore.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.CollabProxy.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARExtensions">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARExtensions.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARExtensions.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.ARExtensions.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.XR.ARExtensions.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.XR.ARExtensions.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.DataPrivacy">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.4.14f1/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>
@@ -324,13 +311,13 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.4.14f1/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.Editor">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Editor.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.StandardEvents">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.StandardEvents.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.Tracker">
-      <HintPath>C:/Users/q/Documents/GitHub/Minecraft/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Tracker.dll</HintPath>
+      <HintPath>F:/Minecraft_new/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Tracker.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.4.14f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>
@@ -677,16 +664,6 @@
     <Reference Include="System.Xml.Serialization">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2018.4.14f1/Editor/Data/NetStandard/compat/2.0.0/shims/netfx/System.Xml.Serialization.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="VuforiaScripts.csproj">
-      <Project>{97BFCFA9-5B5A-0C05-E5D5-9F49F3F4B141}</Project>
-      <Name>VuforiaScripts</Name>
-    </ProjectReference>
-    <ProjectReference Include="VuforiaEditorScripts.csproj">
-      <Project>{67F0BD4F-7264-D3D1-91E9-7194F079C262}</Project>
-      <Name>VuforiaEditorScripts</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
