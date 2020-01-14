@@ -36,7 +36,7 @@ public class GameLogic : MonoBehaviour
     private LayerMask bomb_scale;
 
     private Vector3 buildPos;
-    private Vector3 bombPos;
+    private Vector3 tntPos;
 
     private GameObject currentTemplateBlock;
 
@@ -48,10 +48,17 @@ public class GameLogic : MonoBehaviour
     private GameObject blockPrefab_big;
 
     [SerializeField]
+    private GameObject block_tnt;
+    [SerializeField]
+    private GameObject block_tnt_big;
+    [SerializeField]
+    private GameObject block_tnt_bomb;
+    [SerializeField]
     private Material templateMaterial;
-
     [SerializeField]
     private Material temp_del_Material;
+    [SerializeField]
+    private Material temp_bomb_Material;
 
     [HideInInspector]
     public Dictionary<Vector3, GameObject> created_block = new Dictionary<Vector3, GameObject>();
@@ -61,6 +68,10 @@ public class GameLogic : MonoBehaviour
 
     [HideInInspector]
     public Dictionary<Vector3, int> created_block_mat = new Dictionary<Vector3, int>();
+
+    [HideInInspector]
+    public Dictionary<Vector3, bool> exploding = new Dictionary<Vector3, bool>();
+
 
     private int blockSelectCounter = 0;
 
@@ -201,7 +212,8 @@ public class GameLogic : MonoBehaviour
             {
                 currentTemplateBlock = Instantiate(blockTemplatePrefab, buildPos, Quaternion.identity);
                 if (buildModeOn) currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
-                else currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
+                else if (destroyModeOn) currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
+                else currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_bomb_Material;
             }
             if (canBuild && currentTemplateBlock != null)
             {
@@ -285,14 +297,22 @@ public class GameLogic : MonoBehaviour
                 break;
         }
         place.Play();
-        GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
-        Block tempBlock = bSys.allBlocks[blockSelectCounter];
-        newBlock.name = tempBlock.blockName + "-Block";
-        newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
-        created_block.Add(buildPos, newBlock);
-        created_block_mat.Add(buildPos, blockSelectCounter);
-
-        Debug.Log("Minecraft PlaceBlock > Total block : " + created_block.Count + ", created_block" + buildPos);
+        if (blockSelectCounter == -1)
+        {
+            GameObject newBlock = Instantiate(block_tnt, buildPos, Quaternion.Euler(-90f, 0f, 0f));
+            newBlock.name = "TNT-Block";
+            created_block.Add(buildPos, newBlock);
+            created_block_mat.Add(buildPos, blockSelectCounter);
+        }
+        else
+        {
+            GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
+            Block tempBlock = bSys.allBlocks[blockSelectCounter];
+            newBlock.name = tempBlock.blockName + "-Block";
+            newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+            created_block.Add(buildPos, newBlock);
+            created_block_mat.Add(buildPos, blockSelectCounter);
+        }
     }
     public void screen_touch()
     {
@@ -303,7 +323,11 @@ public class GameLogic : MonoBehaviour
                 currentTemplateBlock.transform.position = buildPos;
                 if (buildModeOn) PlaceBlock();
                 else if (destroyModeOn) DeleteBlock();
-                else BombBlock();
+                else
+                {
+                    tntPos = buildPos;
+                    BombBlock();
+                }
             }
         }
     }
@@ -334,31 +358,52 @@ public class GameLogic : MonoBehaviour
 
     private void BombBlock()
     {
-        StartCoroutine("bomb");
+        if (created_block_mat[tntPos] == -1)
+        {
+            exploding.Add(tntPos, true);
+            StartCoroutine("bomb");
+        }
     }
     IEnumerator bomb()
     {
-        Vector3 bomb_pos = buildPos;
+        Vector3 bomb_pos = tntPos;
+        GameObject tnt_block = created_block[bomb_pos];
+        Destroy(tnt_block);
+        created_block.Remove(bomb_pos);
+        created_block_mat.Remove(bomb_pos);
+        GameObject tnt_block2 = Instantiate(block_tnt_bomb, bomb_pos, Quaternion.Euler(-90f, 0f, 0f));
         bomb_src.Play();
         yield return new WaitForSeconds(2);
         bomb_src2.Play();
         GameObject bomb = Instantiate(bomb_obj, bomb_pos, Quaternion.identity);
-        Destroy(bomb, 2);
+        Destroy(bomb, 2f);
+        Destroy(tnt_block2);
         float radius = 2f;
         Debug.Log("Minecraft Bomb > start");
+        exploding.Remove(bomb_pos);
         Collider[] colliders = Physics.OverlapSphere(bomb_pos, radius, bomb_scale);
         Debug.Log("Minecraft Bomb > " + colliders);
         int i = 0;
         while (i < colliders.Length)
         {
-            Debug.Log("Minecraft Bomb > " + colliders[i].transform.position);
-            GameObject newBlock = created_block[colliders[i].transform.position];
-            Destroy(newBlock);
-            created_block.Remove(colliders[i].transform.position);
-            created_block_mat.Remove(colliders[i].transform.position);
+            if (created_block_mat[colliders[i].transform.position] != -1)
+            {
+                GameObject newBlock = created_block[colliders[i].transform.position];
+                Destroy(newBlock);
+                created_block.Remove(colliders[i].transform.position);
+                created_block_mat.Remove(colliders[i].transform.position);
+            }
+            else
+            {
+                if (exploding.ContainsKey(colliders[i].transform.position) == false)
+                {
+                    Debug.Log("Minecraft Bomb > start another tnt" + colliders[i].transform.position);
+                    tntPos = colliders[i].transform.position;
+                    BombBlock();
+                }
+            }
             i++;
         }
-
     }
 
     public void create_mode()
@@ -424,12 +469,22 @@ public class GameLogic : MonoBehaviour
                     world.blocks[i].x + ground_pos.x,
                     world.blocks[i].y + ground_pos.y,
                     world.blocks[i].z + ground_pos.z);
-                GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
-                Block tempBlock = bSys.allBlocks[world.blocks[i].mat];
-                newBlock.name = tempBlock.blockName + "-Block";
-                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
-                created_block.Add(buildPos, newBlock);
-                created_block_mat.Add(buildPos, world.blocks[i].mat);
+                if (world.blocks[i].mat == -1)
+                {
+                    GameObject newBlock = Instantiate(block_tnt, buildPos, Quaternion.Euler(-90f, 0f, 0f));
+                    newBlock.name = "TNT-Block";
+                    created_block.Add(buildPos, newBlock);
+                    created_block_mat.Add(buildPos, world.blocks[i].mat);
+                }
+                else
+                {
+                    GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
+                    Block tempBlock = bSys.allBlocks[world.blocks[i].mat];
+                    newBlock.name = tempBlock.blockName + "-Block";
+                    newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                    created_block.Add(buildPos, newBlock);
+                    created_block_mat.Add(buildPos, world.blocks[i].mat);
+                }
             }
         }
     }
@@ -475,17 +530,26 @@ public class GameLogic : MonoBehaviour
 
 
                 //Make small block
-                GameObject newBlock = Instantiate(blockPrefab, new_pos, Quaternion.identity);
-                Block tempBlock = bSys.allBlocks[created_block_mat[new_pos]];
-                newBlock.name = tempBlock.blockName + "-Block";
-                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
-                created_block.Add(new_pos, newBlock);
+                if (created_block_mat[new_pos] == -1)
+                {
+                    GameObject newBlock = Instantiate(block_tnt, new_pos, Quaternion.Euler(-90f, 0f, 0f));
+                    newBlock.name = "TNT-Block";
+                    created_block.Add(new_pos, newBlock);
+                }
+                else
+                {
+                    GameObject newBlock = Instantiate(blockPrefab, new_pos, Quaternion.identity);
+                    Block tempBlock = bSys.allBlocks[created_block_mat[new_pos]];
+                    newBlock.name = tempBlock.blockName + "-Block";
+                    newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                    created_block.Add(new_pos, newBlock);
+                }
 
                 //Delete big block
                 Destroy(oldBlock);
                 created_block_big.Remove(block_list[i]);
             }
-            ground.transform.localScale = new Vector3(ground.transform.localScale.x / scale, 1, ground.transform.localScale.z / scale);
+            ground.SetActive(true);
         }
         else
         {
@@ -505,17 +569,26 @@ public class GameLogic : MonoBehaviour
                 new_pos.z = scale * (new_pos.z - ground_pos.z) + ground_pos.z;
 
                 //Make big block
-                GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
-                Block tempBlock = bSys.allBlocks[created_block_mat[block_list[i]]];
-                newBlock.name = tempBlock.blockName + "-Block";
-                newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
-                created_block_big.Add(new_pos, newBlock);
+                if (created_block_mat[block_list[i]] == -1)
+                {
+                    GameObject newBlock = Instantiate(block_tnt_big, new_pos, Quaternion.Euler(-90f, 0f, 0f));
+                    newBlock.name = "TNT-Block";
+                    created_block_big.Add(new_pos, newBlock);
+                }
+                else
+                {
+                    GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
+                    Block tempBlock = bSys.allBlocks[created_block_mat[block_list[i]]];
+                    newBlock.name = tempBlock.blockName + "-Block";
+                    newBlock.GetComponent<MeshRenderer>().material = tempBlock.blockMaterial;
+                    created_block_big.Add(new_pos, newBlock);
+                }
 
                 //Delete small block
                 Destroy(oldBlock);
                 created_block.Remove(block_list[i]);
             }
-            ground.transform.localScale = new Vector3(ground.transform.localScale.x * scale, 1, ground.transform.localScale.z * scale);
+            ground.SetActive(false);
         }
     }
     public void hide_UI()
@@ -536,7 +609,7 @@ public class GameLogic : MonoBehaviour
     {
         worldName = newName;
     }
-
+    
     public void mat_01()
     {
         blockSelectCounter = 00;
@@ -580,5 +653,25 @@ public class GameLogic : MonoBehaviour
     public void mat_11()
     {
         blockSelectCounter = 10;
+    }
+    public void mat_12()
+    {
+        blockSelectCounter = 11;
+    }
+    public void mat_13()
+    {
+        blockSelectCounter = 12;
+    }
+    public void mat_14()
+    {
+        blockSelectCounter = 13;
+    }
+    public void mat_15()
+    {
+        blockSelectCounter = 14;
+    }
+    public void mat_tnt()
+    {
+        blockSelectCounter = -1; // tnt
     }
 }
