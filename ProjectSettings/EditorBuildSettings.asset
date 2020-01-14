@@ -7,10 +7,10 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Scenes/World choice scene.unity
-    guid: a6aeb8f6064aeea48973b10f39ece34e
+    guid: 0ac6b29de01b3854080dcf6b1afd901a
   - enabled: 1
     path: Assets/Scenes/World create scene.unity
-    guid: 442f2e5efed873441bb4cee9c18cfb03
+    guid: 38c47408823c5114d85adf6f63efe6eb
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 6778d886c59d54243a6967d6eea2eb89

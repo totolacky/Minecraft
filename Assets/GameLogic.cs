@@ -22,6 +22,7 @@ public class GameLogic : MonoBehaviour
 
     private bool buildModeOn = false;
     private bool destroyModeOn = false;
+    private bool bombModeOn = false;
     private bool canBuild = false;
     private bool large = false;
 
@@ -30,7 +31,11 @@ public class GameLogic : MonoBehaviour
     [SerializeField]
     private LayerMask buildableSurfacesLayer;
 
+    [SerializeField]
+    private LayerMask bomb_scale;
+
     private Vector3 buildPos;
+    private Vector3 bombPos;
 
     private GameObject currentTemplateBlock;
 
@@ -60,16 +65,25 @@ public class GameLogic : MonoBehaviour
 
     private Vector3 ground_pos;
 
+    public AudioSource bomb_src;
+    public AudioSource bomb_src2;
+    public AudioSource place;
+    public AudioClip place_1;
+    public AudioClip place_2;
+    public AudioClip place_3;
+    public AudioClip place_4;
+    public GameObject bomb_obj;
+
     [SerializeField]
     private static string worldName;
-
+    
+    private GameObject ground;
     [Serializable]
     public class World
     {
         //public Dictionary<int, Block> blockType;
         public string worldName;
         public List<BlockInfo> blocks;
-
         public World(string name)
         {
             //blockType = new Dictionary<int, Block>();
@@ -77,7 +91,6 @@ public class GameLogic : MonoBehaviour
             blocks = new List<BlockInfo>();
         }
     }
-
     [Serializable]
     public class BlockInfo
     {
@@ -85,7 +98,6 @@ public class GameLogic : MonoBehaviour
         public float y;
         public float z;
         public int mat;
-
         public BlockInfo(Vector3 _pos, int _mat)
         {
             x = _pos.x;
@@ -100,7 +112,6 @@ public class GameLogic : MonoBehaviour
         arOrigin = FindObjectOfType<ARSessionOrigin>();
         bSys = GetComponent<BlockSystem>();
         playerCamera.farClipPlane = 200;
-        Debug.Log("World Name: "+worldName);
     }
 
     void Update()
@@ -110,7 +121,7 @@ public class GameLogic : MonoBehaviour
 
         if (!large)
         {
-            if (buildModeOn || destroyModeOn)
+            if (buildModeOn || destroyModeOn || bombModeOn)
             {
                 RaycastHit buildPosHit;
 
@@ -169,7 +180,7 @@ public class GameLogic : MonoBehaviour
                 }
             }
 
-            if (!(buildModeOn || destroyModeOn) && currentTemplateBlock != null)
+            if (!(buildModeOn || destroyModeOn || bombModeOn) && currentTemplateBlock != null)
             {
                 Destroy(currentTemplateBlock.gameObject);
                 canBuild = false;
@@ -198,7 +209,7 @@ public class GameLogic : MonoBehaviour
         if (!isGroundMade)
         {
             var position = new Vector3(Mathf.Round(placementPose.position.x), Mathf.Round(placementPose.position.y) - (float)1, Mathf.Round(placementPose.position.z));
-            Instantiate(objectToPlace, position, placementPose.rotation);
+            ground = Instantiate(objectToPlace, position, placementPose.rotation);
             ground_pos = position;
             isGroundMade = true;
 
@@ -240,12 +251,29 @@ public class GameLogic : MonoBehaviour
 
             var cameraForward = Camera.current.transform.forward;
             var cameraBearing = new Vector3(cameraForward.x, 0, cameraForward.z).normalized;
-            placementPose.rotation = Quaternion.LookRotation(cameraBearing);
+            placementPose.rotation = Quaternion.identity;
         }
     }
 
     private void PlaceBlock()
     {
+        int sound = UnityEngine.Random.Range(0, 4);
+        switch (sound)
+        {
+            case 0:
+                place.clip = place_1;
+                break;
+            case 1:
+                place.clip = place_2;
+                break;
+            case 2:
+                place.clip = place_3;
+                break;
+            case 3:
+                place.clip = place_4;
+                break;
+        }
+        place.Play();
         GameObject newBlock = Instantiate(blockPrefab, buildPos, Quaternion.identity);
         Block tempBlock = bSys.allBlocks[blockSelectCounter];
         newBlock.name = tempBlock.blockName + "-Block";
@@ -253,7 +281,7 @@ public class GameLogic : MonoBehaviour
         created_block.Add(buildPos, newBlock);
         created_block_mat.Add(buildPos, blockSelectCounter);
 
-        Debug.Log("PlaceBlock > Total block : " + created_block.Count + ", created_block" + buildPos);
+        Debug.Log("Minecraft PlaceBlock > Total block : " + created_block.Count + ", created_block" + buildPos);
     }
     public void screen_touch()
     {
@@ -263,21 +291,70 @@ public class GameLogic : MonoBehaviour
             {
                 currentTemplateBlock.transform.position = buildPos;
                 if (buildModeOn) PlaceBlock();
-                else DeleteBlock();
+                else if (destroyModeOn) DeleteBlock();
+                else BombBlock();
             }
         }
     }
     private void DeleteBlock()
     {
+        int sound = UnityEngine.Random.Range(0, 4);
+        switch (sound)
+        {
+            case 0:
+                place.clip = place_1;
+                break;
+            case 1:
+                place.clip = place_2;
+                break;
+            case 2:
+                place.clip = place_3;
+                break;
+            case 3:
+                place.clip = place_4;
+                break;
+        }
+        place.Play();
         GameObject newBlock = created_block[buildPos];
         Destroy(newBlock);
         created_block.Remove(buildPos);
         created_block_mat.Remove(buildPos);
     }
+
+    private void BombBlock()
+    {
+        StartCoroutine("bomb");
+    }
+    IEnumerator bomb()
+    {
+        Vector3 bomb_pos = buildPos;
+        bomb_src.Play();
+        yield return new WaitForSeconds(2);
+        bomb_src2.Play();
+        GameObject bomb = Instantiate(bomb_obj, bomb_pos, Quaternion.identity);
+        Destroy(bomb, 2);
+        float radius = 2f;
+        Debug.Log("Minecraft Bomb > start");
+        Collider[] colliders = Physics.OverlapSphere(bomb_pos, radius, bomb_scale);
+        Debug.Log("Minecraft Bomb > " + colliders);
+        int i = 0;
+        while (i < colliders.Length)
+        {
+            Debug.Log("Minecraft Bomb > " + colliders[i].transform.position);
+            GameObject newBlock = created_block[colliders[i].transform.position];
+            Destroy(newBlock);
+            created_block.Remove(colliders[i].transform.position);
+            created_block_mat.Remove(colliders[i].transform.position);
+            i++;
+        }
+
+    }
+
     public void create_mode()
     {
         buildModeOn = true;
         destroyModeOn = false;
+        bombModeOn = false;
         currentTemplateBlock.GetComponent<MeshRenderer>().material = templateMaterial;
     }
 
@@ -285,6 +362,15 @@ public class GameLogic : MonoBehaviour
     {
         buildModeOn = false;
         destroyModeOn = true;
+        bombModeOn = false;
+        currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
+    }
+
+    public void bomb_mode()
+    {
+        buildModeOn = false;
+        destroyModeOn = false;
+        bombModeOn = true;
         currentTemplateBlock.GetComponent<MeshRenderer>().material = temp_del_Material;
     }
     public void change_block() // Change block material
@@ -297,7 +383,7 @@ public class GameLogic : MonoBehaviour
     {
         Debug.Log("Saved");
         if (large) scale_block();
-        PlayerPrefs.DeleteKey("W:"+worldName);
+        PlayerPrefs.DeleteKey("W:" + worldName);
         List<Vector3> block_list = new List<Vector3>(created_block.Keys);
         var world = new World(worldName);
         for (int i = 0; i < created_block.Count; i++)
@@ -305,17 +391,14 @@ public class GameLogic : MonoBehaviour
             world.blocks.Add(new BlockInfo(new Vector3(block_list[i].x - ground_pos.x, block_list[i].y - ground_pos.y, block_list[i].z - ground_pos.z), created_block_mat[block_list[i]]));
         }
         PlayerPrefs.SetString("W:" + worldName, MyUtil.ObjectToString(world));
-
         var worlds = (ArrayList)MyUtil.StringToObject(PlayerPrefs.GetString("worlds"));
         if (!worlds.Contains(worldName))
         {
             worlds.Add(worldName);
             PlayerPrefs.DeleteKey("worlds");
-            PlayerPrefs.SetString("worlds",MyUtil.ObjectToString(worlds));
+            PlayerPrefs.SetString("worlds", MyUtil.ObjectToString(worlds));
         }
-
         PlayerPrefs.Save();
-
         MyUtil.PrintArrayList((ArrayList)MyUtil.StringToObject(PlayerPrefs.GetString("worlds")));
     }
     public void load_block()
@@ -339,16 +422,15 @@ public class GameLogic : MonoBehaviour
             }
         }
     }
-
     public void clear_block()
     {
-        Debug.Log("clear_Block > Total block : " + created_block.Count);
+        Debug.Log("Minecraft clear_Block > Total block : " + created_block.Count);
         List<Vector3> block_list = new List<Vector3>(created_block.Keys);
 
 
         for (int i = 0; i < block_list.Count; i++)
         {
-            Debug.Log("clear_Block > for Delete block : " + i);
+            Debug.Log("Minecraft clear_Block > for Delete block : " + i);
             GameObject newBlock = created_block[block_list[i]];
             Destroy(newBlock);
             created_block.Remove(block_list[i]);
@@ -358,6 +440,10 @@ public class GameLogic : MonoBehaviour
     }
     public void scale_block()
     {
+        if (!isGroundMade)
+        {
+            return;
+        }
         float scale = 5;
         if (large)
         {
@@ -388,6 +474,7 @@ public class GameLogic : MonoBehaviour
                 Destroy(oldBlock);
                 created_block_big.Remove(block_list[i]);
             }
+            ground.transform.localScale = new Vector3(ground.transform.localScale.x / scale, 1, ground.transform.localScale.z / scale);
         }
         else
         {
@@ -406,7 +493,6 @@ public class GameLogic : MonoBehaviour
 
                 new_pos.z = scale * (new_pos.z - ground_pos.z) + ground_pos.z;
 
-
                 //Make big block
                 GameObject newBlock = Instantiate(blockPrefab_big, new_pos, Quaternion.identity);
                 Block tempBlock = bSys.allBlocks[created_block_mat[block_list[i]]];
@@ -418,33 +504,17 @@ public class GameLogic : MonoBehaviour
                 Destroy(oldBlock);
                 created_block.Remove(block_list[i]);
             }
+            ground.transform.localScale = new Vector3(ground.transform.localScale.x * scale, 1, ground.transform.localScale.z * scale);
         }
     }
-
     public void to_home()
     {
         SceneManager.LoadScene("World choice scene");
     }
-
-    /*public string ObjectToString(object obj)
+    public void setWorldName(string newName)
     {
-        using (MemoryStream ms = new MemoryStream())
-        {
-            new BinaryFormatter().Serialize(ms, obj);
-            return Convert.ToBase64String(ms.ToArray());
-        }
-    }*/
-
-    /*public object StringToObject(string base64String)
-    {
-        byte[] bytes = Convert.FromBase64String(base64String);
-        using (MemoryStream ms = new MemoryStream(bytes, 0, bytes.Length))
-        {
-            ms.Write(bytes, 0, bytes.Length);
-            ms.Position = 0;
-            return new BinaryFormatter().Deserialize(ms);
-        }
-    }*/
+        worldName = newName;
+    }
 
     public void mat_01()
     {
@@ -489,10 +559,5 @@ public class GameLogic : MonoBehaviour
     public void mat_11()
     {
         blockSelectCounter = 10;
-    }
-
-    public void setWorldName(string newName)
-    {
-        worldName = newName;
     }
 }
