@@ -56,7 +56,21 @@ public class ScrollViewAdapter : MonoBehaviour
         SceneManager.LoadScene("World create scene");   
     }
 
-    public void Reset()
+    public void connectServer()
+    {
+        string userName = PlayerPrefs.GetString("userName");
+        Debug.Log("username: "+userName);
+        if (userName == null || userName == "")
+        {
+            SceneManager.LoadScene("Login scene");
+        }
+        else
+        {
+            SceneManager.LoadScene("Market download scene");
+        }
+    }
+
+    public void reset()
     {
         PlayerPrefs.DeleteAll();
         SceneManager.LoadScene("World choice scene");

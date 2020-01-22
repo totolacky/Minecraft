@@ -14,4 +14,13 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 6778d886c59d54243a6967d6eea2eb89
+  - enabled: 1
+    path: Assets/Scenes/Login scene.unity
+    guid: bea164479736c7847938d4e05c86c924
+  - enabled: 1
+    path: Assets/Scenes/Market download scene.unity
+    guid: d23700c56fa0c0140b051f52a5189c7d
+  - enabled: 1
+    path: Assets/Scenes/Market upload scene.unity
+    guid: cd8f350a8c1abd54aaa71e0cb3738212
   m_configObjects: {}

@@ -52,4 +52,15 @@ public class MyUtil : MonoBehaviour
         }
         Debug.Log("Printing done.");
     }
+
+    public static void PrintPlayerPref()
+    {
+        Debug.Log("Printing playerpref:");
+        ArrayList arr = (ArrayList)StringToObject(PlayerPrefs.GetString("worlds"));
+        for (int i = 0; i<arr.Count; i++)
+        {
+            Debug.Log("world name: ["+arr[i]+"] data: ["+PlayerPrefs.GetString("W:"+arr[i])+"]");
+        }
+        Debug.Log("Printing done.");
+    }
 }
